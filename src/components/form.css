@@ -1,0 +1,85 @@
+.section {
+  border: 1px solid #2d3148;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  opacity: 0.55;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.section--active {
+  opacity: 1;
+  border-color: #4f6ef7;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  user-select: none;
+}
+
+.section-header input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #4f6ef7;
+  cursor: pointer;
+}
+
+.section-body {
+  margin-top: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  display: block;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: #475569;
+  margin-top: 0.15rem;
+}
+
+select,
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  background: #0f1117;
+  border: 1px solid #2d3148;
+  border-radius: 6px;
+  color: #e2e8f0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: #4f6ef7;
+}
+
+select option {
+  background: #1e2130;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.row > * {
+  flex: 1;
+}
