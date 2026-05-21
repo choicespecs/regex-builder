@@ -353,6 +353,111 @@ const SECTIONS = [
     ],
   },
   {
+    id: 'recipes',
+    title: 'Practical Recipes (copy-paste)',
+    intro: 'Complete code patterns for the most common regex tasks in JavaScript. Each recipe is a self-contained snippet you can adapt directly.',
+    items: [
+      {
+        pattern: '/^\\d{5}$/.test(str)',
+        name: 'Validate — does the whole string match?',
+        description: 'Use ^ and $ anchors with test() to ensure the entire string conforms, not just a substring inside it. Returns a boolean. Always anchor validation patterns at both ends.',
+        matches: ['/^\\d{5}$/.test("90210") → true', '/^\\d{5}$/.test("90210-1234") → false (extra chars fail)'],
+        noMatch: [],
+      },
+      {
+        pattern: 'const m = str.match(re)  // no g flag',
+        name: 'Extract first match + capture groups',
+        description: 'str.match() without the g flag returns [fullMatch, group1, group2, …] or null. Check for null before accessing indices. With g it returns only full matches — use matchAll() if you need groups from all occurrences.',
+        matches: [
+          '"2024-01-15".match(/(\\d{4})-(\\d{2})-(\\d{2})/)',
+          '→ ["2024-01-15", "2024", "01", "15"]',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: 'const { year } = str.match(re)?.groups ?? {}',
+        name: 'Destructure named capture groups',
+        description: 'Named groups live on match.groups. Optional chaining (?.) and a fallback ({}) keep the destructure safe when there\'s no match.',
+        matches: [
+          'const re = /(?<year>\\d{4})-(?<month>\\d{2})/',
+          '"2024-01".match(re).groups → { year: "2024", month: "01" }',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: '[...str.matchAll(/re/g)].map(m => m[1])',
+        name: 'Collect one group from every match',
+        description: 'matchAll() requires the g flag and returns an iterator of full match objects — each has indices, capture groups, and groups. Spread into an array, then map to whichever slot you need.',
+        matches: [
+          'const re = /<(\\w+)>/g',
+          '[..."<b><i><u>".matchAll(re)].map(m => m[1]) → ["b", "i", "u"]',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: 'str.replace(/re/g, m => m.toUpperCase())',
+        name: 'Transform each match with a function',
+        description: 'When the replacement is a function it receives (fullMatch, group1, group2, …, offset, original). Use this for dynamic transformations a static string can\'t express.',
+        matches: [
+          '"hello world".replace(/\\b\\w/g, c => c.toUpperCase()) → "Hello World"',
+          '"2024-01-15".replace(/(\\d{4})-(\\d{2})-(\\d{2})/, (_, y, m, d) => `${d}/${m}/${y}`) → "15/01/2024"',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: 'str.replace(/[^\\w\\s]/g, \'\')',
+        name: 'Delete / remove matches',
+        description: 'Replace with an empty string to delete every occurrence. Use a negated class [^…] to strip everything except what you want to keep.',
+        matches: [
+          '"hello, world!".replace(/[^\\w\\s]/g, \'\') → "hello world"',
+          '"  extra   spaces  ".replace(/\\s+/g, \' \').trim() → "extra spaces"',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: '"one,two,,three".split(/,+/)',
+        name: 'Split and collapse repeated delimiters',
+        description: 'str.split() accepts a regex as the delimiter. A quantifier like /,+/ collapses multiple consecutive delimiters into one split point, preventing empty strings in the result.',
+        matches: [
+          '"one,two,,three".split(/,+/) → ["one", "two", "three"]',
+          '"a  b\\tc".split(/\\s+/) → ["a", "b", "c"]',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: '(str.match(/re/g) ?? []).length',
+        name: 'Count occurrences',
+        description: 'str.match() with g returns an array of all full matches, or null when nothing matches. The ?? [] fallback handles null safely. The array length is the count.',
+        matches: [
+          '("abcabc".match(/a/g) ?? []).length → 2',
+          '[..."hello".matchAll(/l/g)].length → 2  (matchAll alternative)',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: 'while ((m = re.exec(str)) !== null)',
+        name: 'Iterate with exec() for match positions',
+        description: 'The exec() loop gives you each match object one at a time, including m.index (character offset). Useful when you need the exact position of every match. Requires the g flag. Guard zero-length matches with re.lastIndex++ to prevent an infinite loop.',
+        matches: [
+          'const re = /\\d+/g, m',
+          'while ((m = re.exec("a1 b22")) !== null)',
+          '  console.log(m[0], "@", m.index)  // "1" @ 1, "22" @ 4',
+        ],
+        noMatch: [],
+      },
+      {
+        pattern: 'str.replaceAll(re, sub)  // re must have g flag',
+        name: 'replaceAll — explicit intent',
+        description: 'str.replaceAll() makes the intent clear: replace every occurrence. When passed a regex it requires the g flag (otherwise throws). Equivalent to str.replace(/re/g, sub) but self-documenting.',
+        matches: [
+          '"aabbcc".replaceAll(/b/g, "X") → "aaXXcc"',
+          '"foo.bar.baz".replaceAll(/\\./g, "-") → "foo-bar-baz"',
+        ],
+        noMatch: [],
+      },
+    ],
+  },
+  {
     id: 'javascript',
     title: 'JavaScript Regex API',
     intro: 'How to use regex patterns in JavaScript code.',
@@ -458,7 +563,7 @@ export default function ReferencePanel() {
           {open ? '▲' : '▼'} Regex Reference &amp; Study Guide
         </span>
         <span className="ref-panel-toggle-hint">
-          {open ? 'Hide' : 'Anchors · Character classes · Quantifiers · Groups · Flags · Common patterns · JS API'}
+          {open ? 'Hide' : 'Anchors · Character classes · Quantifiers · Groups · Flags · Common patterns · Recipes · JS API'}
         </span>
       </button>
       {open && (
