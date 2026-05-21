@@ -6,6 +6,7 @@ export default function Section({ title, enabled, onToggle, children }) {
           type="checkbox"
           checked={enabled}
           onChange={e => onToggle(e.target.checked)}
+          onClick={e => e.stopPropagation()}
         />
         <span>{title}</span>
       </label>
