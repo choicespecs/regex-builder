@@ -7,7 +7,14 @@ const TYPES = [
   { value: 'word-boundary', label: 'Word boundary (\\b)' },
 ]
 
+const PATTERN_PREVIEW = {
+  digit:          { fragment: '\\d',        hint: 'Matches any single digit 0–9' },
+  letter:         { fragment: '[a-zA-Z]',   hint: 'Matches any single letter a–z or A–Z' },
+  'word-boundary':{ fragment: '\\b',        hint: 'Zero-width — matches a word boundary position' },
+}
+
 export default function StartsWithSection({ config, onChange }) {
+  const preview = PATTERN_PREVIEW[config.type]
   return (
     <Section
       title="Starts with"
@@ -32,6 +39,13 @@ export default function StartsWithSection({ config, onChange }) {
             value={config.value}
             onChange={e => onChange({ value: e.target.value })}
           />
+        </div>
+      )}
+      {preview && (
+        <div>
+          <span className="field-label">Pattern</span>
+          <code className="pattern-chip">{preview.fragment}</code>
+          <p className="pattern-chip-hint">{preview.hint}</p>
         </div>
       )}
     </Section>

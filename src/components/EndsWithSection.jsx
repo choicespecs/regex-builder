@@ -7,7 +7,14 @@ const TYPES = [
   { value: 'whitespace', label: 'Whitespace' },
 ]
 
+const PATTERN_PREVIEW = {
+  digit:      { fragment: '\\d',      hint: 'Matches any single digit 0–9' },
+  letter:     { fragment: '[a-zA-Z]', hint: 'Matches any single letter a–z or A–Z' },
+  whitespace: { fragment: '\\s',      hint: 'Matches a space, tab, newline, or carriage return' },
+}
+
 export default function EndsWithSection({ config, onChange }) {
+  const preview = PATTERN_PREVIEW[config.type]
   return (
     <Section
       title="Ends with"
@@ -32,6 +39,13 @@ export default function EndsWithSection({ config, onChange }) {
             value={config.value}
             onChange={e => onChange({ value: e.target.value })}
           />
+        </div>
+      )}
+      {preview && (
+        <div>
+          <span className="field-label">Pattern</span>
+          <code className="pattern-chip">{preview.fragment}</code>
+          <p className="pattern-chip-hint">{preview.hint}</p>
         </div>
       )}
     </Section>
