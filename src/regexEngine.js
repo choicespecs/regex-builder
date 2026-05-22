@@ -10,11 +10,11 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function patternFor(type, value) {
+export function patternFor(type, value) {
   switch (type) {
     case 'literal':        return escapeRegex(value || '')
-    case 'digit':          return '\\d'
-    case 'letter':         return '[a-zA-Z]'
+    case 'digit':          return value ? `[${value}]` : '\\d'
+    case 'letter':         return value ? `[${value}]` : '[a-zA-Z]'
     case 'word-boundary':  return '\\b'
     case 'whitespace':     return '\\s'
     case 'any':            return '.'

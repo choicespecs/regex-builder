@@ -1,4 +1,5 @@
 import Section from './Section'
+import { patternFor } from '../regexEngine'
 
 const TYPES = [
   { value: 'literal',       label: 'Literal text' },
@@ -7,14 +8,9 @@ const TYPES = [
   { value: 'word-boundary', label: 'Word boundary (\\b)' },
 ]
 
-const PATTERN_PREVIEW = {
-  digit:          { fragment: '\\d',        hint: 'Matches any single digit 0–9' },
-  letter:         { fragment: '[a-zA-Z]',   hint: 'Matches any single letter a–z or A–Z' },
-  'word-boundary':{ fragment: '\\b',        hint: 'Zero-width — matches a word boundary position' },
-}
-
 export default function StartsWithSection({ config, onChange }) {
-  const preview = PATTERN_PREVIEW[config.type]
+  const pattern = patternFor(config.type, config.value)
+
   return (
     <Section
       title="Starts with"
@@ -30,6 +26,7 @@ export default function StartsWithSection({ config, onChange }) {
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
+
       {config.type === 'literal' && (
         <div>
           <span className="field-label">Value</span>
@@ -41,11 +38,55 @@ export default function StartsWithSection({ config, onChange }) {
           />
         </div>
       )}
-      {preview && (
+
+      {config.type === 'digit' && (
+        <div>
+          <span className="field-label">Restrict to (optional)</span>
+          <input
+            type="text"
+            placeholder="e.g. 0-5  or  13  or  02468"
+            value={config.value}
+            onChange={e => onChange({ value: e.target.value })}
+          />
+          <span className="field-hint">
+            Blank = any digit (\d). Fill to restrict: <code>0-5</code> → <code>[0-5]</code>
+          </span>
+        </div>
+      )}
+
+      {config.type === 'letter' && (
+        <div>
+          <span className="field-label">Restrict to (optional)</span>
+          <input
+            type="text"
+            placeholder="e.g. a-f  or  aeiou  or  A-Z"
+            value={config.value}
+            onChange={e => onChange({ value: e.target.value })}
+          />
+          <span className="field-hint">
+            Blank = any letter ([a-zA-Z]). Fill to restrict: <code>a-z</code> → <code>[a-z]</code>
+          </span>
+        </div>
+      )}
+
+      {config.type === 'word-boundary' && (
+        <p className="field-hint">
+          \b is a zero-width assertion — it matches a position between a word character and a
+          non-word character, consuming no character itself. Nothing to configure.
+        </p>
+      )}
+
+      {config.type !== 'literal' && config.type !== 'word-boundary' && (
         <div>
           <span className="field-label">Pattern</span>
-          <code className="pattern-chip">{preview.fragment}</code>
-          <p className="pattern-chip-hint">{preview.hint}</p>
+          <code className="pattern-chip">{pattern || '\\d'}</code>
+        </div>
+      )}
+
+      {config.type === 'word-boundary' && (
+        <div>
+          <span className="field-label">Pattern</span>
+          <code className="pattern-chip">\b</code>
         </div>
       )}
     </Section>
