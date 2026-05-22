@@ -1,15 +1,29 @@
 import Section from './Section'
-import { patternFor } from '../regexEngine'
+import { patternFor, applyCount } from '../regexEngine'
 
 const TYPES = [
   { value: 'literal',    label: 'Literal text' },
-  { value: 'digit',     label: 'Digit (0–9)' },
-  { value: 'letter',    label: 'Letter (a–z, A–Z)' },
+  { value: 'digit',      label: 'Digit (0–9)' },
+  { value: 'letter',     label: 'Letter (a–z, A–Z)' },
   { value: 'whitespace', label: 'Whitespace' },
 ]
 
+const COUNT_TYPES = [
+  { value: 'once',         label: 'exactly one' },
+  { value: 'one-or-more',  label: 'one or more (+)' },
+  { value: 'zero-or-more', label: 'zero or more (*)' },
+  { value: 'exactly',      label: 'exactly N…' },
+  { value: 'at-least',     label: 'at least N…' },
+]
+
+const NEEDS_COUNT = new Set(['digit', 'letter'])
+const NEEDS_N     = new Set(['exactly', 'at-least'])
+
 export default function EndsWithSection({ config, onChange }) {
-  const pattern = patternFor(config.type, config.value)
+  const countType = config.countType || 'once'
+  const countMin  = config.countMin  || 1
+  const base      = patternFor(config.type, config.value)
+  const pattern   = applyCount(base, countType, countMin)
 
   return (
     <Section
@@ -21,7 +35,7 @@ export default function EndsWithSection({ config, onChange }) {
         <span className="field-label">Type</span>
         <select
           value={config.type}
-          onChange={e => onChange({ type: e.target.value, value: '' })}
+          onChange={e => onChange({ type: e.target.value, value: '', countType: 'once', countMin: 1 })}
         >
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -69,6 +83,29 @@ export default function EndsWithSection({ config, onChange }) {
         </div>
       )}
 
+      {NEEDS_COUNT.has(config.type) && (
+        <div>
+          <span className="field-label">Count</span>
+          <div className="row">
+            <select
+              value={countType}
+              onChange={e => onChange({ countType: e.target.value })}
+            >
+              {COUNT_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            {NEEDS_N.has(countType) && (
+              <input
+                type="number"
+                min={1}
+                value={countMin}
+                onChange={e => onChange({ countMin: Math.max(1, parseInt(e.target.value) || 1) })}
+                style={{ maxWidth: '5rem' }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {config.type === 'whitespace' && (
         <div>
           <span className="field-label">Pattern</span>
@@ -77,7 +114,7 @@ export default function EndsWithSection({ config, onChange }) {
         </div>
       )}
 
-      {(config.type === 'digit' || config.type === 'letter') && (
+      {config.type !== 'literal' && config.type !== 'whitespace' && (
         <div>
           <span className="field-label">Pattern</span>
           <code className="pattern-chip">{pattern}</code>

@@ -1,5 +1,5 @@
 import Section from './Section'
-import { patternFor } from '../regexEngine'
+import { patternFor, applyCount } from '../regexEngine'
 
 const TYPES = [
   { value: 'literal',       label: 'Literal text' },
@@ -8,8 +8,22 @@ const TYPES = [
   { value: 'word-boundary', label: 'Word boundary (\\b)' },
 ]
 
+const COUNT_TYPES = [
+  { value: 'once',         label: 'exactly one' },
+  { value: 'one-or-more',  label: 'one or more (+)' },
+  { value: 'zero-or-more', label: 'zero or more (*)' },
+  { value: 'exactly',      label: 'exactly N…' },
+  { value: 'at-least',     label: 'at least N…' },
+]
+
+const NEEDS_COUNT = new Set(['digit', 'letter'])
+const NEEDS_N     = new Set(['exactly', 'at-least'])
+
 export default function StartsWithSection({ config, onChange }) {
-  const pattern = patternFor(config.type, config.value)
+  const countType = config.countType || 'once'
+  const countMin  = config.countMin  || 1
+  const base      = patternFor(config.type, config.value)
+  const pattern   = applyCount(base, countType, countMin)
 
   return (
     <Section
@@ -21,7 +35,7 @@ export default function StartsWithSection({ config, onChange }) {
         <span className="field-label">Type</span>
         <select
           value={config.type}
-          onChange={e => onChange({ type: e.target.value, value: '' })}
+          onChange={e => onChange({ type: e.target.value, value: '', countType: 'once', countMin: 1 })}
         >
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -69,24 +83,40 @@ export default function StartsWithSection({ config, onChange }) {
         </div>
       )}
 
-      {config.type === 'word-boundary' && (
-        <p className="field-hint">
-          \b is a zero-width assertion — it matches a position between a word character and a
-          non-word character, consuming no character itself. Nothing to configure.
-        </p>
-      )}
-
-      {config.type !== 'literal' && config.type !== 'word-boundary' && (
+      {NEEDS_COUNT.has(config.type) && (
         <div>
-          <span className="field-label">Pattern</span>
-          <code className="pattern-chip">{pattern || '\\d'}</code>
+          <span className="field-label">Count</span>
+          <div className="row">
+            <select
+              value={countType}
+              onChange={e => onChange({ countType: e.target.value })}
+            >
+              {COUNT_TYPES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            {NEEDS_N.has(countType) && (
+              <input
+                type="number"
+                min={1}
+                value={countMin}
+                onChange={e => onChange({ countMin: Math.max(1, parseInt(e.target.value) || 1) })}
+                style={{ maxWidth: '5rem' }}
+              />
+            )}
+          </div>
         </div>
       )}
 
       {config.type === 'word-boundary' && (
+        <p className="field-hint">
+          \b is zero-width — it marks a position between a word character and a
+          non-word character without consuming any character. Nothing to configure.
+        </p>
+      )}
+
+      {config.type !== 'literal' && (
         <div>
           <span className="field-label">Pattern</span>
-          <code className="pattern-chip">\b</code>
+          <code className="pattern-chip">{pattern || base || '\\b'}</code>
         </div>
       )}
     </Section>

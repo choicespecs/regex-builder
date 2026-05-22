@@ -1,7 +1,7 @@
 export const DEFAULT_CONFIG = {
-  startsWith:   { enabled: false, type: 'literal', value: '' },
+  startsWith:   { enabled: false, type: 'literal', value: '', countType: 'once', countMin: 1 },
   contains:     { enabled: false, type: 'literal', value: '' },
-  endsWith:     { enabled: false, type: 'literal', value: '' },
+  endsWith:     { enabled: false, type: 'literal', value: '', countType: 'once', countMin: 1 },
   quantity:     { enabled: false, type: 'exactly', min: 1, max: 2 },
   captureGroup: { enabled: false, name: '' },
 }
@@ -23,6 +23,17 @@ export function patternFor(type, value) {
   }
 }
 
+// Applies a count suffix to a pattern fragment (used by startsWith / endsWith).
+export function applyCount(pattern, countType, countMin) {
+  if (!pattern || !countType || countType === 'once') return pattern
+  const n = Math.max(1, countMin || 1)
+  if (countType === 'one-or-more')  return `${pattern}+`
+  if (countType === 'zero-or-more') return `${pattern}*`
+  if (countType === 'exactly')      return `${pattern}{${n}}`
+  if (countType === 'at-least')     return `${pattern}{${n},}`
+  return pattern
+}
+
 function quantify(pattern, qty) {
   if (!pattern || !qty.enabled) return pattern
   const { type, min, max } = qty
@@ -35,14 +46,24 @@ function quantify(pattern, qty) {
 function describeType(type, value) {
   switch (type) {
     case 'literal':       return `Matches the exact text "${value}"`
-    case 'digit':         return 'Matches any single digit 0–9. Equivalent to [0-9]'
-    case 'letter':        return 'Matches any single ASCII letter a–z or A–Z. Equivalent to [a-zA-Z]'
+    case 'digit':         return value ? `Matches any digit in the set [${value}]` : 'Matches any single digit 0–9'
+    case 'letter':        return value ? `Matches any letter in the set [${value}]` : 'Matches any ASCII letter a–z or A–Z'
     case 'word-boundary': return 'Matches at a word boundary — the position between a \\w and a \\W character. Zero-width: no character is consumed'
-    case 'whitespace':    return 'Matches any whitespace character: space, tab (\\t), newline (\\n), carriage return (\\r)'
-    case 'any':           return 'Matches any single character except newline. Use [\\s\\S] to also match newlines'
-    case 'any-of':        return `Character class — matches any ONE character from the set [${value}]`
+    case 'whitespace':    return 'Matches any whitespace: space, tab (\\t), newline (\\n), carriage return (\\r)'
+    case 'any':           return 'Matches any single character except newline'
+    case 'any-of':        return `Character class — matches any ONE character from [${value}]`
     default:              return ''
   }
+}
+
+function describeCount(countType, countMin) {
+  const n = Math.max(1, countMin || 1)
+  if (!countType || countType === 'once') return ''
+  if (countType === 'one-or-more')  return ` — one or more (+)`
+  if (countType === 'zero-or-more') return ` — zero or more (*)`
+  if (countType === 'exactly')      return ` — exactly ${n} time${n !== 1 ? 's' : ''} {${n}}`
+  if (countType === 'at-least')     return ` — at least ${n} time${n !== 1 ? 's' : ''} {${n},}`
+  return ''
 }
 
 function describeQty(qty) {
@@ -52,8 +73,6 @@ function describeQty(qty) {
   return ''
 }
 
-// Returns an array of {fragment, section, label, description} for the current config.
-// Used by RegexBreakdown to explain each token in plain English.
 export function getBreakdown(config) {
   const { startsWith, contains, endsWith, quantity, captureGroup } = config
   const items = []
@@ -63,8 +82,14 @@ export function getBreakdown(config) {
       items.push({ fragment: '\\b', section: 'startsWith', label: 'Word boundary', description: describeType('word-boundary') })
     } else {
       items.push({ fragment: '^', section: 'startsWith', label: 'Start anchor', description: 'Asserts the match must begin at the very start of the string. Does not consume a character.' })
-      const p = patternFor(startsWith.type, startsWith.value)
-      if (p) items.push({ fragment: p, section: 'startsWith', label: 'Starts with', description: describeType(startsWith.type, startsWith.value) })
+      const base = patternFor(startsWith.type, startsWith.value)
+      const p = applyCount(base, startsWith.countType, startsWith.countMin)
+      if (p) items.push({
+        fragment: p,
+        section: 'startsWith',
+        label: 'Starts with',
+        description: describeType(startsWith.type, startsWith.value) + describeCount(startsWith.countType, startsWith.countMin),
+      })
     }
   }
 
@@ -83,8 +108,14 @@ export function getBreakdown(config) {
   }
 
   if (endsWith.enabled) {
-    const p = patternFor(endsWith.type, endsWith.value)
-    if (p) items.push({ fragment: p, section: 'endsWith', label: 'Ends with', description: describeType(endsWith.type, endsWith.value) })
+    const base = patternFor(endsWith.type, endsWith.value)
+    const p = applyCount(base, endsWith.countType, endsWith.countMin)
+    if (p) items.push({
+      fragment: p,
+      section: 'endsWith',
+      label: 'Ends with',
+      description: describeType(endsWith.type, endsWith.value) + describeCount(endsWith.countType, endsWith.countMin),
+    })
     items.push({ fragment: '$', section: 'endsWith', label: 'End anchor', description: 'Asserts the match must end at the very end of the string. Does not consume a character.' })
   }
 
@@ -103,7 +134,6 @@ export function getBreakdown(config) {
   return items
 }
 
-// Quantity applies to the "contains" section.
 export function buildRegex(config) {
   const { startsWith, contains, endsWith, quantity, captureGroup } = config
 
@@ -114,7 +144,8 @@ export function buildRegex(config) {
       prefix = '\\b'
     } else {
       prefix = '^'
-      startPattern = patternFor(startsWith.type, startsWith.value)
+      const base = patternFor(startsWith.type, startsWith.value)
+      startPattern = applyCount(base, startsWith.countType, startsWith.countMin)
     }
   }
 
@@ -126,7 +157,8 @@ export function buildRegex(config) {
   let endPattern = ''
   let suffix = ''
   if (endsWith.enabled) {
-    endPattern = patternFor(endsWith.type, endsWith.value)
+    const base = patternFor(endsWith.type, endsWith.value)
+    endPattern = applyCount(base, endsWith.countType, endsWith.countMin)
     suffix = '$'
   }
 
